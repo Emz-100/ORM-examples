@@ -1,53 +1,63 @@
-# Import the necessary modules
-from django.db import models
-from django.db.models import Q
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 
-# Define a simple model for a Book
-class Book(models.Model):
-    title = models.CharField(max_length=100)
-    author = models.CharField(max_length=50)
-    publication_year = models.IntegerField()
+# Create an SQLite database engine
+engine = create_engine('sqlite:///task_manager.db')
 
-# Create a new book record
-def create_book():
-    book = Book(title="Sample Book", author="John Doe", publication_year=2023)
-    book.save()
+# Create a Base class as a template for models
+Base = declarative_base()
 
-# Retrieve all books
-def get_all_books():
-    books = Book.objects.all()
-    for book in books:
-        print(f"{book.title} by {book.author}, published in {book.publication_year}")
+# Define a Task model that maps to a tasks table
+class Task(Base):
+    __tablename__ = 'tasks'
 
-# Update a book record
-def update_book(book_id, new_title):
-    book = Book.objects.get(pk=book_id)
-    book.title = new_title
-    book.save()
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed = Column(Boolean, default=False)
 
-# Delete a book record
-def delete_book(book_id):
-    book = Book.objects.get(pk=book_id)
-    book.delete()
+    def __repr__(self):
+        return f"<Task(id={self.id}, title={self.title}, created_at={self.created_at}, completed={self.completed})>"
 
-# Main function to demonstrate ORM operations
-if __name__ == "__main__":
-    # Create a new book
-    create_book()
+# Create the tasks table in the database
+Base.metadata.create_all(engine)
 
-    # Retrieve all books
-    print("All Books:")
-    get_all_books()
+# Create a session object to interact with the database
+Session = sessionmaker(bind=engine)
+session = Session()
 
-    # Update a book's title
-    book_id_to_update = 1  # Assuming the book's ID is 1
-    new_title = "Updated Book Title"
-    update_book(book_id_to_update, new_title)
+# Create a new task
+task1 = Task(title='Buy groceries', description='Milk, eggs, bread')
+session.add(task1)
+session.commit()
 
-    # Delete a book
-    book_id_to_delete = 1  # Assuming the book's ID is 1
-    delete_book(book_id_to_delete)
+# Query all tasks
+tasks = session.query(Task).all()
+print("All Tasks:")
+for task in tasks:
+    print(task)
 
-    # Retrieve all books after updates and deletions
-    print("\nAll Books (after update and delete operations):")
-    get_all_books()
+# Update a task's status
+task1.completed = True
+session.commit()
+
+# Create another task
+task2 = Task(title='Finish report', description='Due by Friday')
+session.add(task2)
+session.commit()
+
+# Delete a task
+session.delete(task1)
+session.commit()
+
+# Query tasks again
+tasks = session.query(Task).all()
+print("\nAll Tasks (after update and delete operations):")
+for task in tasks:
+    print(task)
+
+# Close the session
+session.close()
