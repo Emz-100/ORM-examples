@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 # Create an SQLite database engine
-engine = create_engine('sqlite:///task_manager.db')
+engine = create_engine('sqlite:///:memory:')
 
 # Create a Base class as a template for models
 Base = declarative_base()
